@@ -8,7 +8,7 @@ import AVFoundation
 import CoreML
 import Vision
 
-class ViewController: UIViewController, UINavigationControllerDelegate, UIImagePickerControllerDelegate {
+class ViewController: UIViewController, UINavigationControllerDelegate, UIImagePickerControllerDelegate, AVCapturePhotoCaptureDelegate {
     
     enum ImageCaptureOrientation {
         case portrait
@@ -19,6 +19,9 @@ class ViewController: UIViewController, UINavigationControllerDelegate, UIImageP
         var image: UIImage
         var originalOrientation: ImageCaptureOrientation
     }
+        var captureSession: AVCaptureSession!
+        var photoOutput: AVCapturePhotoOutput!
+        var previewLayer: AVCaptureVideoPreviewLayer!
     @IBOutlet weak var cameraView: UIImageView! // カメラのプレビュー表示用（あとで静止画を見せる用に）
     @IBOutlet weak var footerView: UIView! // 結果表示用ビュー
 // 結果表示ラベル
@@ -29,7 +32,7 @@ class ViewController: UIViewController, UINavigationControllerDelegate, UIImageP
     var result: FixedImageResult? = nil
     override func viewDidLoad() {
         super.viewDidLoad()
-
+        setupCamera()
         // ラベルのセットアップ
 
         NSLayoutConstraint.activate([
@@ -46,32 +49,68 @@ class ViewController: UIViewController, UINavigationControllerDelegate, UIImageP
             print("モデルの初期化に失敗しました: \(error)")
         }
 
-        // カメラの準備
-        imagePicker.delegate = self
-        imagePicker.sourceType = .camera
-        imagePicker.cameraCaptureMode = .photo
     }
+    func setupCamera() {
+            // 1. セッション作成
+            captureSession = AVCaptureSession()
+            captureSession.sessionPreset = .photo
 
+            // 2. 入力デバイス（カメラ）
+            guard let camera = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back),
+                  let input = try? AVCaptureDeviceInput(device: camera),
+                  captureSession.canAddInput(input) else {
+                print("カメラのセットアップ失敗")
+                return
+            }
+            captureSession.addInput(input)
+
+            // 3. 出力（写真）
+            photoOutput = AVCapturePhotoOutput()
+            guard captureSession.canAddOutput(photoOutput) else { return }
+            captureSession.addOutput(photoOutput)
+
+            // 4. プレビュー用のレイヤー
+            previewLayer = AVCaptureVideoPreviewLayer(session: captureSession)
+            previewLayer.videoGravity = .resizeAspectFill
+            previewLayer.frame = view.bounds
+            view.layer.insertSublayer(previewLayer, at: 0)
+
+            // 🔒 プレビューも縦固定
+            if let conn = previewLayer.connection, conn.isVideoOrientationSupported {
+                conn.videoOrientation = .portrait
+            }
+
+            captureSession.startRunning()
+        }
     @IBAction func takePhoto(_ sender: Any) {
-        present(imagePicker, animated: true, completion: nil)
+        let settings = AVCapturePhotoSettings()
+                
+                // 🔒 撮影画像も縦固定
+                if let conn = photoOutput.connection(with: .video), conn.isVideoOrientationSupported {
+                    conn.videoOrientation = .portrait
+                }
+
+                photoOutput.capturePhoto(with: settings, delegate: self)
     }
-
-    func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any]) {
-        picker.dismiss(animated: true)
-
-        guard let originalImage = info[.originalImage] as? UIImage else { return }
-        let fixedImageObj = fixedOrientationWithMetadata(image: originalImage)
+    func photoOutput(_ output: AVCapturePhotoOutput, didFinishProcessingPhoto photo: AVCapturePhoto, error: Error?) {
+            guard let imageData = photo.fileDataRepresentation(),
+                  let image = UIImage(data: imageData) else {
+                print("画像取得失敗")
+                return
+            }
+            // 表示 or 保存
+        let fixedImageObj = fixedOrientationWithMetadata(image: image)
         analyze(image: fixedImageObj.image,orientation: fixedImageObj.originalOrientation)
-    }
+        }
 
     func analyze(image: UIImage, orientation: ImageCaptureOrientation) {
-        guard let cgImage = image.cgImage else { return }
+        guard let cgImage = image.cgImage else { return print(1)}
         cameraView.image = image  // 撮った画像を表
                // 既存のバウンディングボックスを削除（再描画時に重ならないように）
         cameraView.subviews.forEach { $0.removeFromSuperview() }
 
         let request = VNCoreMLRequest(model: yoloModel) { request, error in
-            guard let results = request.results as? [VNRecognizedObjectObservation] else { return }
+            guard let results = request.results as? [VNRecognizedObjectObservation] else { return}
 
             self.objectCounter.removeAll()
 
@@ -87,6 +126,7 @@ class ViewController: UIViewController, UINavigationControllerDelegate, UIImageP
 
             let sorted = self.objectCounter.sorted(by: { $0.1 > $1.1 })
             DispatchQueue.main.async {
+                print(sorted)
                 self.textView.text = sorted.map { "\($0.key): \($0.value)個" }.joined(separator: "\n")
             }
         }
@@ -131,18 +171,112 @@ class ViewController: UIViewController, UINavigationControllerDelegate, UIImageP
         picker.dismiss(animated: true)
     }
     func fixedOrientationWithMetadata(image: UIImage) -> FixedImageResult {
-        // 補正後の画像サイズで判定（Exifには依存しない）
-        let isLandscape = image.size.width > image.size.height
-        let orientation: ImageCaptureOrientation = isLandscape ? .landscape : .portrait
-        // 描画して補正（Exifを除去して .up 向きにする）
-        UIGraphicsBeginImageContextWithOptions(image.size, false, image.scale)
+        let orientation: ImageCaptureOrientation
+        if image.imageOrientation == .left || image.imageOrientation == .right ||
+            image.imageOrientation == .leftMirrored || image.imageOrientation == .rightMirrored {
+            orientation = .portrait
+        } else {
+            orientation = .landscape
+        }
+
+        // 本当に描画するサイズ（幅と高さを逆にする必要がある場合がある）
+        var drawSize = image.size
+        if orientation == .landscape {
+            drawSize = CGSize(width: image.size.height, height: image.size.width)
+        }
+
+        UIGraphicsBeginImageContextWithOptions(drawSize, false, image.scale)
+        guard let context = UIGraphicsGetCurrentContext() else {
+            UIGraphicsEndImageContext()
+            return FixedImageResult(image: image, originalOrientation: orientation)
+        }
+        
+        // 回転補正
+        switch image.imageOrientation {
+       
+        case .up:
+            context.rotate(by: -.pi / 2)
+            context.translateBy(x: -image.size.width, y: 0)
+        case .down:
+            context.rotate(by: .pi)
+            context.translateBy(x: -image.size.width, y: -image.size.height)
+        default:
+            break
+        }
+
         image.draw(in: CGRect(origin: .zero, size: image.size))
         let normalizedImage = UIGraphicsGetImageFromCurrentImageContext()
         UIGraphicsEndImageContext()
+        print(image.size)
+        print(normalizedImage!.size)
         return FixedImageResult(
             image: normalizedImage ?? image,
             originalOrientation: orientation
         )
     }
 }
+extension UIImage {
+ 
+    func fixedOrientation() -> UIImage? {
+ 
+        guard imageOrientation != UIImage.Orientation.up else {
+            //This is default orientation, don't need to do anything
+            return self.copy() as? UIImage
+        }
+ 
+        guard let cgImage = self.cgImage else {
+            //CGImage is not available
+            return nil
+        }
+ 
+        guard let colorSpace = cgImage.colorSpace, let ctx = CGContext(data: nil, width: Int(size.width), height: Int(size.height), bitsPerComponent: cgImage.bitsPerComponent, bytesPerRow: 0, space: colorSpace, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else {
+            return nil //Not able to create CGContext
+        }
+ 
+        var transform: CGAffineTransform = CGAffineTransform.identity
+ 
+        switch imageOrientation {
+        case .down, .downMirrored:
+            transform = transform.translatedBy(x: size.width, y: size.height)
+            transform = transform.rotated(by: CGFloat.pi)
+            break
+        case .left, .leftMirrored:
+            transform = transform.translatedBy(x: size.width, y: 0)
+            transform = transform.rotated(by: CGFloat.pi / 2.0)
+            break
+        case .right, .rightMirrored:
+            transform = transform.translatedBy(x: 0, y: size.height)
+            transform = transform.rotated(by: CGFloat.pi / -2.0)
+            break
+        case .up, .upMirrored:
+            break
+        }
+ 
+        //Flip image one more time if needed to, this is to prevent flipped image
+        switch imageOrientation {
+        case .upMirrored, .downMirrored:
+            transform = transform.translatedBy(x: size.width, y: 0)
+            transform = transform.scaledBy(x: -1, y: 1)
 
+        case .leftMirrored, .rightMirrored:
+            transform = transform.translatedBy(x: size.height, y: 0)
+            transform = transform.scaledBy(x: -1, y: 1)
+
+        case .up, .down, .left, .right:
+            break
+        }
+ 
+        ctx.concatenate(transform)
+ 
+        switch imageOrientation {
+        case .left, .leftMirrored, .right, .rightMirrored:
+            ctx.draw(self.cgImage!, in: CGRect(x: 0, y: 0, width: size.height, height: size.width))
+        default:
+            ctx.draw(self.cgImage!, in: CGRect(x: 0, y: 0, width: size.width, height: size.height))
+            break
+        }
+ 
+        guard let newCGImage = ctx.makeImage() else { return nil }
+        return UIImage.init(cgImage: newCGImage, scale: 1, orientation: .up)
+    }
+}
