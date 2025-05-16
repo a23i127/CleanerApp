@@ -19,78 +19,68 @@ class ViewController: UIViewController, UINavigationControllerDelegate, UIImageP
         var image: UIImage
         var originalOrientation: ImageCaptureOrientation
     }
-        var captureSession: AVCaptureSession!
+        var cameraManeger: AVCaptureSession!
         var photoOutput: AVCapturePhotoOutput!
-        var previewLayer: AVCaptureVideoPreviewLayer!
+        var cameraPreviewLayer: AVCaptureVideoPreviewLayer!
     @IBOutlet weak var cameraView: UIImageView! // カメラのプレビュー表示用（あとで静止画を見せる用に）
     @IBOutlet weak var footerView: UIView! // 結果表示用ビュー
 // 結果表示ラベル
     @IBOutlet weak var textView: UITextView!
     private let imagePicker = UIImagePickerController()
-    private var yoloModel: VNCoreMLModel!
+    private var aiModel: VNCoreMLModel!
     private var objectCounter: [String: Int] = [:]
     var result: FixedImageResult? = nil
+    
     override func viewDidLoad() {
         super.viewDidLoad()
-        setupCamera()
-        // ラベルのセットアップ
-
-        NSLayoutConstraint.activate([
-            textView.leadingAnchor.constraint(equalTo: footerView.leadingAnchor, constant: 16),
-            textView.trailingAnchor.constraint(equalTo: footerView.trailingAnchor, constant: -16),
-            textView.topAnchor.constraint(equalTo: footerView.topAnchor, constant: 8),
-            textView.bottomAnchor.constraint(equalTo: footerView.bottomAnchor, constant: -8)
-        ])
-
-        // モデルの初期化
+        setAiModel()
+    }
+    func setAiModel() {
         do {
-            yoloModel = try VNCoreMLModel(for: yolov8l().model) // クラス名は自分のに合わせてね
+            aiModel = try VNCoreMLModel(for: yolov8l().model)
         } catch {
             print("モデルの初期化に失敗しました: \(error)")
         }
-
+    }
+    @IBAction func action(_ sender: Any) {
+        setupCamera()
     }
     func setupCamera() {
-            // 1. セッション作成
-            captureSession = AVCaptureSession()
-            captureSession.sessionPreset = .photo
-
-            // 2. 入力デバイス（カメラ）
-            guard let camera = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back),
-                  let input = try? AVCaptureDeviceInput(device: camera),
-                  captureSession.canAddInput(input) else {
-                print("カメラのセットアップ失敗")
-                return
-            }
-            captureSession.addInput(input)
-
-            // 3. 出力（写真）
-            photoOutput = AVCapturePhotoOutput()
-            guard captureSession.canAddOutput(photoOutput) else { return }
-            captureSession.addOutput(photoOutput)
-
-            // 4. プレビュー用のレイヤー
-            previewLayer = AVCaptureVideoPreviewLayer(session: captureSession)
-            previewLayer.videoGravity = .resizeAspectFill
-            previewLayer.frame = view.bounds
-            view.layer.insertSublayer(previewLayer, at: 0)
-
-            // 🔒 プレビューも縦固定
-            if let conn = previewLayer.connection, conn.isVideoOrientationSupported {
-                conn.videoOrientation = .portrait
-            }
-
-            captureSession.startRunning()
+        cameraManeger = AVCaptureSession()
+        cameraManeger.sessionPreset = .photo
+        guard let camera = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back),
+              let inputedCamera = try? AVCaptureDeviceInput(device: camera),
+              cameraManeger.canAddInput(inputedCamera) else {
+            print("カメラのセットアップ失敗")
+            return
         }
+        cameraManeger.addInput(inputedCamera)
+        
+        photoOutput = AVCapturePhotoOutput()
+        guard cameraManeger.canAddOutput(photoOutput) else { return }
+        cameraManeger.addOutput(photoOutput)
+        
+        cameraPreviewLayer = AVCaptureVideoPreviewLayer(session: cameraManeger)
+        cameraPreviewLayer.videoGravity = .resizeAspectFill
+        cameraPreviewLayer.frame = view.bounds
+        view.layer.insertSublayer(cameraPreviewLayer, at: 0)
+        
+        let portantAngle = 90
+        if let cameraPreview = cameraPreviewLayer.connection, cameraPreview.isVideoRotationAngleSupported(CGFloat(portantAngle)) {
+            cameraPreview.videoRotationAngle = CGFloat(portantAngle)
+        }
+        DispatchQueue.global(qos: .background).async {
+            self.cameraManeger.startRunning()
+        }
+    }
     @IBAction func takePhoto(_ sender: Any) {
         let settings = AVCapturePhotoSettings()
-                
-                // 🔒 撮影画像も縦固定
-                if let conn = photoOutput.connection(with: .video), conn.isVideoOrientationSupported {
-                    conn.videoOrientation = .portrait
-                }
-
-                photoOutput.capturePhoto(with: settings, delegate: self)
+        if let conn = photoOutput.connection(with: .video), conn.isVideoOrientationSupported {
+            conn.videoOrientation = .portrait
+        }
+        DispatchQueue.global(qos: .background).async {
+            self.photoOutput.capturePhoto(with: settings, delegate: self)
+        }
     }
     func photoOutput(_ output: AVCapturePhotoOutput, didFinishProcessingPhoto photo: AVCapturePhoto, error: Error?) {
             guard let imageData = photo.fileDataRepresentation(),
@@ -99,17 +89,30 @@ class ViewController: UIViewController, UINavigationControllerDelegate, UIImageP
                 return
             }
             // 表示 or 保存
-        let fixedImageObj = fixedOrientationWithMetadata(image: image)
-        analyze(image: fixedImageObj.image,orientation: fixedImageObj.originalOrientation)
+        showPhotoConfirmationDialog(takenImage: image)
         }
+    func showPhotoConfirmationDialog(takenImage: UIImage) {
+        let alert = UIAlertController(title: "この写真を使いますか？", message: nil, preferredStyle: .actionSheet)
 
+        alert.addAction(UIAlertAction(title: "使う", style: .default) { _ in
+            let fixedImageObj = self.fixedOrientationWithMetadata(image: takenImage)
+            self.analyze(image: fixedImageObj.image,orientation: fixedImageObj.originalOrientation)
+        })
+
+        alert.addAction(UIAlertAction(title: "もう一度撮る", style: .default) { _ in
+            
+        })
+
+        alert.addAction(UIAlertAction(title: "キャンセル", style: .cancel))
+        present(alert, animated: true)
+    }
     func analyze(image: UIImage, orientation: ImageCaptureOrientation) {
         guard let cgImage = image.cgImage else { return print(1)}
         cameraView.image = image  // 撮った画像を表
                // 既存のバウンディングボックスを削除（再描画時に重ならないように）
         cameraView.subviews.forEach { $0.removeFromSuperview() }
 
-        let request = VNCoreMLRequest(model: yoloModel) { request, error in
+        let request = VNCoreMLRequest(model: aiModel) { request, error in
             guard let results = request.results as? [VNRecognizedObjectObservation] else { return}
 
             self.objectCounter.removeAll()
