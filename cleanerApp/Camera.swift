@@ -64,5 +64,8 @@ class Camera: NSObject,AVCapturePhotoCaptureDelegate {
             // 表示 or 保存
         onImageCaptured?(image)
         }
+    func stopCamera() {
+        self.cameraManeger.stopRunning()
+    }
 }
 

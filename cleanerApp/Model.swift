@@ -15,3 +15,4 @@ enum ImageCaptureOrientation {
     case portrait
     case landscape
 }
+

@@ -8,7 +8,7 @@
 import Foundation
 import UIKit
 class FixImageOrientation {
-    func fixedOrientationWithMetadata(image: UIImage,imageView: UIImageView) -> FixedImageResult {
+    func fixedOrientationWithMetadata(image: UIImage,imageView: UIImageView) -> FixedImageResult? {
         let orientation: ImageCaptureOrientation
         if image.imageOrientation == .left || image.imageOrientation == .right ||
             image.imageOrientation == .leftMirrored || image.imageOrientation == .rightMirrored {
