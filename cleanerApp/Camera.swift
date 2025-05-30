@@ -15,6 +15,7 @@ class Camera: NSObject,AVCapturePhotoCaptureDelegate {
     var photoOutput: AVCapturePhotoOutput!
     var cameraPreviewLayer: AVCaptureVideoPreviewLayer!
     var onImageCaptured: ((UIImage) -> Void)?
+    weak var delegate: AVCapturePhotoCaptureDelegate?
     func setupCamera(view: UIView) {
         cameraManeger = AVCaptureSession()
         cameraManeger.sessionPreset = .photo
@@ -51,19 +52,10 @@ class Camera: NSObject,AVCapturePhotoCaptureDelegate {
             cameraPreview.videoRotationAngle = CGFloat(portantAngle)
         }
         DispatchQueue.global(qos: .background).async {
-            self.photoOutput.capturePhoto(with: settings, delegate: self)
+            self.photoOutput.capturePhoto(with: settings, delegate: self.delegate!)
         }
     }
     
-    func photoOutput(_ output: AVCapturePhotoOutput, didFinishProcessingPhoto photo: AVCapturePhoto, error: Error?) {
-            guard let imageData = photo.fileDataRepresentation(),
-                  let image = UIImage(data: imageData) else {
-                print("画像取得失敗")
-                return
-            }
-            // 表示 or 保存
-        onImageCaptured?(image)
-        }
     func stopCamera() {
         self.cameraManeger.stopRunning()
     }

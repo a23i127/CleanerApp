@@ -7,12 +7,11 @@ import UIKit
 import AVFoundation
 import CoreML
 import Vision
-
+//可読性の高いコードを常に意識する
 class ViewController: UIViewController, UINavigationControllerDelegate, AVCapturePhotoCaptureDelegate {
     
-    @IBOutlet weak var cameraView: UIImageView! // カメラのプレビュー表示用（あとで静止画を見せる用に）
-    @IBOutlet weak var footerView: UIView! // 結果表示用ビュー
-    // 結果表示ラベル
+    @IBOutlet weak var cameraView: UIImageView!
+    @IBOutlet weak var footerView: UIView! 
     var scanModel = ScanAiModel()
     var camera = Camera()
     var fixImageOrientation = FixImageOrientation()
@@ -24,12 +23,8 @@ class ViewController: UIViewController, UINavigationControllerDelegate, AVCaptur
     var analysedData: DecodableModel?
     override func viewDidLoad() {
         super.viewDidLoad()
+        camera.delegate = self
         aiModel = scanModel.setAiModel()
-        camera.onImageCaptured = { [weak self] image in
-            guard let self = self else { return }
-            self.didTakenPicture(takenImage: image,onConfirm: {
-                self.fixImageOrientation.fixedOrientationWithMetadata(image: image, imageView: self.cameraView) })
-        }
     }
     @IBAction func action(_ sender: Any) {
         camera.setupCamera(view: view)
@@ -38,13 +33,26 @@ class ViewController: UIViewController, UINavigationControllerDelegate, AVCaptur
     @IBAction func takePhoto(_ sender: Any) {
         camera.takePicture()
     }
-    
-    func didTakenPicture(takenImage: UIImage,onConfirm: @escaping () -> FixedImageResult?) {
+    //写真撮った後に呼ばれるデリゲートメソッド
+    func photoOutput(_ output: AVCapturePhotoOutput, didFinishProcessingPhoto photo: AVCapturePhoto, error: Error?) {
+        guard let imageData = photo.fileDataRepresentation(),
+              let image = UIImage(data: imageData) else {
+            print("画像取得失敗")
+            return
+        }
+        //写真の回転の向きを修正
+        let fixedImage = fixImageOrientation.fixedOrientationWithMetadata(image: image, imageView: cameraView)
+        guard let fixedImage else { return }
+        askToUsePhoto(takenImageData: fixedImage)
+    }
+    //撮った写真を使うかどうかの処理
+    func askToUsePhoto(takenImageData: FixedImageResult) {
         let alert = UIAlertController(title: "この写真を使いますか？", message: nil, preferredStyle: .actionSheet)
-        self.cameraView.image = takenImage
+        self.cameraView.image = takenImageData.image
         alert.addAction(UIAlertAction(title: "使う", style: .default) { _ in
-            self.startAnalys(onConfirm: onConfirm,aiModel: self.aiModel)
             self.camera.stopCamera()
+            self.requestToSever(takenImage: takenImageData.image,aiModel: self.aiModel)
+            self.detectImage(imageData: takenImageData,model: self.aiModel)
         })
         alert.addAction(UIAlertAction(title: "もう一度撮る", style: .default) { _ in
             self.cameraView.image = nil
@@ -52,18 +60,21 @@ class ViewController: UIViewController, UINavigationControllerDelegate, AVCaptur
         alert.addAction(UIAlertAction(title: "キャンセル", style: .cancel))
         present(alert, animated: true)
     }
-    
-    func startAnalys(onConfirm: @escaping () -> FixedImageResult?,aiModel: VNCoreMLModel) {
-        guard let fixed = onConfirm() else { return }
-        self.request.uploadToSeverImage(fixed.image) { [weak self] result in
+    //imageをサーバーに送って、pythonサーバーで分析させる
+    func requestToSever(takenImage: UIImage,aiModel: VNCoreMLModel) {
+        self.request.uploadToSeverImage(takenImage) { [weak self] result in
             guard let self = self else { return }
             self.analysedData = result
         }
-        self.imageAnalyzer.analyze(image: fixed.image, model: aiModel) { analyzedResult in
+    }
+    //キャプチャさせたimageに物体検知をさせる処理
+    func detectImage(imageData: FixedImageResult,model: VNCoreMLModel) {
+        self.imageAnalyzer.analyze(image: imageData.image, model: aiModel) { analyzedResult in
+            //検知した物体にboxをつけて描画する
             self.drawBoundingBox.drawBoundingBoxes(
                 on: self.cameraView,
                 observations: analyzedResult,
-                orientation: fixed.originalOrientation
+                orientation: imageData.originalOrientation
             )
         }
     }
