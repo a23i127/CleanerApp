@@ -7,6 +7,7 @@ import UIKit
 import AVFoundation
 import CoreML
 import Vision
+import PKHUD
 //可読性の高いコードを常に意識する
 class ViewController: UIViewController, UINavigationControllerDelegate, AVCapturePhotoCaptureDelegate {
     
@@ -29,12 +30,10 @@ class ViewController: UIViewController, UINavigationControllerDelegate, AVCaptur
     }
     override func viewDidAppear(_ animated: Bool) {
         camera.setupCamera(view: view)
-        
     }
     @IBAction func takePhoto(_ sender: Any) {
         camera.takePicture()
     }
-    
     @IBAction func seni(_ sender: Any) {
         self.performSegue(withIdentifier: "GoReview", sender: nil)
     }
@@ -61,9 +60,9 @@ class ViewController: UIViewController, UINavigationControllerDelegate, AVCaptur
             self.imageAnalyzer.analyze(image: takenImageData.image,model: self.aiModel) { analyzedResult in
                 //検知した物体にboxをつけてたimageを格納
                 self.analysedImage = self.drawBoundingBox.drawBoundingBoxes(
-                    on: self.cameraView,
+                    on: self.cameraView.image!,
                     observations: analyzedResult,
-                    orientation: takenImageData.originalOrientation
+                    orientation: takenImageData.image.imageOrientation
                 )
             }
         })
@@ -75,10 +74,18 @@ class ViewController: UIViewController, UINavigationControllerDelegate, AVCaptur
     }
     //imageをサーバーに送って、pythonサーバーでAIに分析させる
     func requestToSever(takenImage: UIImage,aiModel: VNCoreMLModel) {
+        HUD.show(.labeledProgress(title: "分析中...", subtitle: "画像を送信してAIが解析しています"))
         self.request.uploadToSeverImage(takenImage) { [weak self] result in
             guard let self = self else { return }
+            guard let result else {
+                HUD.flash(.labeledError(title: "エラー", subtitle: "解析に失敗しました"), delay: 1.5)
+                return
+            }
             //解析させた情報を格納
-            self.analysedData = result
+            DispatchQueue.main.async {
+                self.analysedData = result
+            }
+            HUD.flash(.success, delay: 1.0)
         }
     }
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {

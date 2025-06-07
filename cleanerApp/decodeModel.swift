@@ -7,7 +7,7 @@
 
 import Foundation
 struct DecodableModel: Decodable {
-    var message: String
-    var savedAs: String
-    var status: String
+    var filename: String
+    var result:  String
+    var advice: String
 }
