@@ -12,13 +12,13 @@
         <!--カメラ-->
         <scene sceneID="tne-QT-ifu">
             <objects>
-                <viewController id="BYZ-38-t0r" customClass="ViewController" customModule="cleanerApp" customModuleProvider="target" sceneMemberID="viewController">
+                <viewController hidesBottomBarWhenPushed="YES" id="BYZ-38-t0r" customClass="ViewController" customModule="cleanerApp" customModuleProvider="target" sceneMemberID="viewController">
                     <view key="view" contentMode="scaleToFill" id="8bC-Xf-vdC">
                         <rect key="frame" x="0.0" y="0.0" width="393" height="852"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
                             <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="5QD-pb-q0h">
-                                <rect key="frame" x="16" y="104" width="361" height="504"/>
+                                <rect key="frame" x="16" y="111" width="361" height="542"/>
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                             </imageView>
                             <button opaque="NO" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="J76-qZ-ob7">
@@ -30,15 +30,6 @@
                                     <action selector="takePhoto:" destination="BYZ-38-t0r" eventType="touchUpInside" id="JhE-1Q-VgM"/>
                                 </connections>
                             </button>
-                            <button opaque="NO" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="U3D-Qm-btX">
-                                <rect key="frame" x="159" y="758" width="75" height="35"/>
-                                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
-                                <state key="normal" title="Button"/>
-                                <buttonConfiguration key="configuration" style="plain" title="Button"/>
-                                <connections>
-                                    <action selector="seni:" destination="BYZ-38-t0r" eventType="touchUpInside" id="hbd-GD-G5u"/>
-                                </connections>
-                            </button>
                         </subviews>
                         <viewLayoutGuide key="safeArea" id="6Tk-OE-BBY"/>
                         <color key="backgroundColor" systemColor="systemBackgroundColor"/>
@@ -47,13 +38,11 @@
                     <navigationItem key="navigationItem" title="カメラ" id="ZGI-QD-9Xl"/>
                     <connections>
                         <outlet property="cameraView" destination="5QD-pb-q0h" id="sdu-Q2-o0Y"/>
-                        <outlet property="gotoViewButtun" destination="U3D-Qm-btX" id="ih7-89-Zv0"/>
-                        <segue destination="HHY-zv-bi5" kind="presentation" identifier="GoReview" modalPresentationStyle="fullScreen" id="TAW-cn-zIt"/>
                     </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="dkx-z0-nzr" sceneMemberID="firstResponder"/>
             </objects>
-            <point key="canvasLocation" x="2880" y="-345"/>
+            <point key="canvasLocation" x="2872.5190839694656" y="-399.29577464788736"/>
         </scene>
         <!--View Controller-->
         <scene sceneID="eSo-cf-LmW">
@@ -70,7 +59,7 @@
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="M9v-Dk-aFk" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
             </objects>
-            <point key="canvasLocation" x="1295" y="826"/>
+            <point key="canvasLocation" x="27" y="775"/>
         </scene>
         <!--Firtst View Controller-->
         <scene sceneID="5fG-wD-bHr">
@@ -81,12 +70,13 @@
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
                             <button opaque="NO" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="cMH-6F-KZw">
-                                <rect key="frame" x="129" y="310" width="136" height="35"/>
+                                <rect key="frame" x="129" y="304" width="136" height="41"/>
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                 <state key="normal" title="Button"/>
                                 <buttonConfiguration key="configuration" style="plain" title="写真を撮る"/>
                                 <connections>
-                                    <segue destination="BYZ-38-t0r" kind="presentation" modalPresentationStyle="fullScreen" id="taw-DB-zuU"/>
+                                    <action selector="didTakePictureButton:" destination="aal-eI-uB6" eventType="touchUpInside" id="mvH-Av-aHa"/>
+                                    <segue destination="BYZ-38-t0r" kind="presentation" identifier="goCamera" modalPresentationStyle="fullScreen" id="4BR-w8-gGL"/>
                                 </connections>
                             </button>
                             <button opaque="NO" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="Yhq-d6-eTX">
@@ -104,7 +94,7 @@
                     </view>
                     <navigationItem key="navigationItem" id="VYv-ua-KGq"/>
                     <connections>
-                        <segue destination="HHY-zv-bi5" kind="presentation" identifier="library" id="fZa-T8-UUj"/>
+                        <segue destination="HHY-zv-bi5" kind="push" identifier="library" id="WZ3-KI-7Kw"/>
                     </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="3nT-dL-OPh" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
@@ -116,19 +106,19 @@
             <objects>
                 <viewController id="HHY-zv-bi5" customClass="SecondViewController" customModule="cleanerApp" customModuleProvider="target" sceneMemberID="viewController">
                     <view key="view" contentMode="scaleToFill" id="VHC-SC-qin">
-                        <rect key="frame" x="0.0" y="0.0" width="393" height="783"/>
+                        <rect key="frame" x="0.0" y="0.0" width="393" height="852"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
                             <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="AAf-Ya-mw5">
-                                <rect key="frame" x="38" y="85" width="316" height="431"/>
+                                <rect key="frame" x="38" y="162" width="316" height="338"/>
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                             </imageView>
                             <view contentMode="scaleToFill" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="RzC-gp-L7W">
-                                <rect key="frame" x="62" y="576" width="268" height="167"/>
+                                <rect key="frame" x="62" y="587" width="268" height="192"/>
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                 <subviews>
                                     <textView clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" fixedFrame="YES" textAlignment="natural" translatesAutoresizingMaskIntoConstraints="NO" id="sd0-jU-5tY">
-                                        <rect key="frame" x="0.0" y="0.0" width="278" height="159"/>
+                                        <rect key="frame" x="0.0" y="-11" width="278" height="184"/>
                                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                         <color key="backgroundColor" systemColor="systemBackgroundColor"/>
                                         <string key="text">Lorem ipsum dolor sit er elit lamet, consectetaur cillium adipisicing pecu, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. Nam liber te conscient to factor tum poen legum odioque civiuda.</string>
@@ -139,6 +129,13 @@
                                 </subviews>
                                 <color key="backgroundColor" systemColor="systemBackgroundColor"/>
                             </view>
+                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" fixedFrame="YES" text="Label" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="gmU-3v-Wu0">
+                                <rect key="frame" x="86" y="519" width="220" height="40"/>
+                                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                                <fontDescription key="fontDescription" type="system" pointSize="33"/>
+                                <nil key="textColor"/>
+                                <nil key="highlightedColor"/>
+                            </label>
                         </subviews>
                         <viewLayoutGuide key="safeArea" id="8in-Sv-Vhp"/>
                         <color key="backgroundColor" systemColor="systemBackgroundColor"/>
@@ -147,11 +144,12 @@
                     <connections>
                         <outlet property="aiReviewTextView" destination="sd0-jU-5tY" id="cCy-xO-TRa"/>
                         <outlet property="imageView" destination="AAf-Ya-mw5" id="w3e-VL-qrY"/>
+                        <outlet property="scoreLabel" destination="gmU-3v-Wu0" id="FQX-x4-Zyy"/>
                     </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="6qp-pT-Erb" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
             </objects>
-            <point key="canvasLocation" x="3835.8778625954196" y="5.6338028169014089"/>
+            <point key="canvasLocation" x="2873" y="302"/>
         </scene>
         <!--Navigation Controller-->
         <scene sceneID="jSU-Iu-ugE">
@@ -195,9 +193,6 @@
             <point key="canvasLocation" x="28" y="6"/>
         </scene>
     </scenes>
-    <inferredMetricsTieBreakers>
-        <segue reference="fZa-T8-UUj"/>
-    </inferredMetricsTieBreakers>
     <resources>
         <image name="camera" catalog="system" width="128" height="93"/>
         <image name="list.bullet.clipboard" catalog="system" width="98" height="128"/>

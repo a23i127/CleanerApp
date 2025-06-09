@@ -10,7 +10,7 @@ import UIKit
 import PhotosUI
 import PKHUD
 import Vision
-class FirtstViewController: UIViewController,PHPickerViewControllerDelegate {
+class FirtstViewController: UIViewController,PHPickerViewControllerDelegate,CameraViewControllerDelegate {
     var request = Request()
     var analysedData: DecodableModel?
     var analyser = ImageAnalyzer()
@@ -21,6 +21,9 @@ class FirtstViewController: UIViewController,PHPickerViewControllerDelegate {
     override func viewDidLoad() {
         super.viewDidLoad()
         aiModel = scanModel.setAiModel()
+    }
+    @IBAction func didTakePictureButton(_ sender: Any) {
+        
     }
     @IBAction func didTapSelectLibralyButton(_ sender: Any) {
         presentPhotoPicker()
@@ -36,9 +39,11 @@ class FirtstViewController: UIViewController,PHPickerViewControllerDelegate {
     }
     //ライブラリから選択したらデリゲートで呼ばれる
     func picker(_ picker: PHPickerViewController, didFinishPicking results: [PHPickerResult]) {
+        HUD.show(.labeledProgress(title: "分析中...", subtitle: "画像を送信してAIが解析しています"))
         picker.dismiss(animated: true, completion: nil)
         
         guard let provider = results.first?.itemProvider, provider.canLoadObject(ofClass: UIImage.self) else {
+            HUD.flash(.labeledError(title: "エラー", subtitle: "解析に失敗しました"), delay: 1.5)
             return
         }
         provider.loadObject(ofClass: UIImage.self) { [weak self] image, error in
@@ -67,11 +72,21 @@ class FirtstViewController: UIViewController,PHPickerViewControllerDelegate {
             }
         }
     }
+    func cameraViewControllerDidDismiss(analysedImage: UIImage?,analysedData: DecodableModel?) {
+        self.analysedImage = analysedImage
+        self.analysedData = analysedData
+        self.performSegue(withIdentifier: "library", sender: nil)
+    }
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
+        if segue.identifier == "goCamera" {
+            if let cameraViewController = segue.destination as? ViewController {
+                cameraViewController.delegate = self
+            }
+        }
         if segue.identifier == "library" {
             if let reviewViewController = segue.destination as? SecondViewController {
                 reviewViewController.image = self.analysedImage
-                reviewViewController.textData = self.analysedData?.advice
+                reviewViewController.analysData = self.analysedData
             }
         }
     }

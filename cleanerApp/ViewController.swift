@@ -9,10 +9,13 @@ import CoreML
 import Vision
 import PKHUD
 //可読性の高いコードを常に意識する
+protocol CameraViewControllerDelegate: AnyObject {
+    func cameraViewControllerDidDismiss(analysedImage: UIImage?,analysedData: DecodableModel?)
+}
 class ViewController: UIViewController, UINavigationControllerDelegate, AVCapturePhotoCaptureDelegate {
     
+    weak var delegate: CameraViewControllerDelegate?
     @IBOutlet weak var cameraView: UIImageView!
-    @IBOutlet weak var gotoViewButtun: UIButton!
     var scanModel = ScanAiModel()
     var camera = Camera()
     var fixImageOrientation = FixImageOrientation()
@@ -33,9 +36,6 @@ class ViewController: UIViewController, UINavigationControllerDelegate, AVCaptur
     }
     @IBAction func takePhoto(_ sender: Any) {
         camera.takePicture()
-    }
-    @IBAction func seni(_ sender: Any) {
-        self.performSegue(withIdentifier: "GoReview", sender: nil)
     }
     //写真撮った後に呼ばれるデリゲートメソッド
     func photoOutput(_ output: AVCapturePhotoOutput, didFinishProcessingPhoto photo: AVCapturePhoto, error: Error?) {
@@ -86,13 +86,9 @@ class ViewController: UIViewController, UINavigationControllerDelegate, AVCaptur
                 self.analysedData = result
             }
             HUD.flash(.success, delay: 1.0)
-        }
-    }
-    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
-        if segue.identifier == "GoReview" {
-            if let reviewViewController = segue.destination as? SecondViewController {
-                reviewViewController.image = self.analysedImage
-                reviewViewController.textData = self.analysedData?.advice
+            self.dismiss(animated: true) { [weak self] in
+                guard let self = self else { return }
+                self.delegate?.cameraViewControllerDidDismiss(analysedImage: self.analysedImage, analysedData: self.analysedData)
             }
         }
     }
