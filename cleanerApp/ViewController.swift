@@ -26,16 +26,17 @@ class ViewController: UIViewController, UINavigationControllerDelegate, AVCaptur
     var request = Request()
     var analysedData: DecodableModel?
     var analysedImage: UIImage?
+    var orientationCheck = Orientation()
     override func viewDidLoad() {
         super.viewDidLoad()
         camera.delegate = self
         aiModel = scanModel.setAiModel()
     }
     override func viewDidAppear(_ animated: Bool) {
-        camera.setupCamera(view: view)
+        camera.setupCamera(view: view,portantAngle: orientationCheck.videoRotationAngleForCurrentDeviceOrientation())
     }
     @IBAction func takePhoto(_ sender: Any) {
-        camera.takePicture()
+        camera.takePicture(portantAngle: orientationCheck.videoRotationAngleForCurrentDeviceOrientation())
     }
     //写真撮った後に呼ばれるデリゲートメソッド
     func photoOutput(_ output: AVCapturePhotoOutput, didFinishProcessingPhoto photo: AVCapturePhoto, error: Error?) {
@@ -91,6 +92,12 @@ class ViewController: UIViewController, UINavigationControllerDelegate, AVCaptur
                 self.delegate?.cameraViewControllerDidDismiss(analysedImage: self.analysedImage, analysedData: self.analysedData)
             }
         }
+    }
+    override var supportedInterfaceOrientations: UIInterfaceOrientationMask {
+        return .portrait
+    }
+    override var shouldAutorotate: Bool {
+        return true
     }
 }
 

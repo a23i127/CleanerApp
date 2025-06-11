@@ -12,8 +12,10 @@ class FixImageOrientation {
         let orientation: ImageCaptureOrientation
         if image.imageOrientation == .left || image.imageOrientation == .right ||
             image.imageOrientation == .leftMirrored || image.imageOrientation == .rightMirrored {
+            //縦向きで写真を撮った時
             orientation = .portrait
         } else {
+            //横向きで写真を撮った時
             orientation = .landscape
         }
 
@@ -29,7 +31,7 @@ class FixImageOrientation {
             return FixedImageResult(image: image, originalOrientation: orientation)
         }
         
-        // 回転補正
+        // 保存の際に必ず縦表示できるようにコンテキストへ回転補正
         switch image.imageOrientation {
        
         case .up:
@@ -41,7 +43,7 @@ class FixImageOrientation {
         default:
             break
         }
-
+        //作ったコンテキストにimageのピクセルデータを再描写
         image.draw(in: CGRect(origin: .zero, size: image.size))
         let fixedImage = UIGraphicsGetImageFromCurrentImageContext()
         imageView.image = fixedImage
