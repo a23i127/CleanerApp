@@ -16,7 +16,7 @@ class Camera: NSObject,AVCapturePhotoCaptureDelegate {
     var cameraPreviewLayer: AVCaptureVideoPreviewLayer!
     var onImageCaptured: ((UIImage) -> Void)?
     weak var delegate: AVCapturePhotoCaptureDelegate?
-    func setupCamera(view: UIView) {
+    func setupCamera(view: UIView,portantAngle: CGFloat) {
         cameraManeger = AVCaptureSession()
         cameraManeger.sessionPreset = .photo
         guard let camera = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back),
@@ -36,7 +36,6 @@ class Camera: NSObject,AVCapturePhotoCaptureDelegate {
         cameraPreviewLayer.frame = view.bounds
         view.layer.insertSublayer(cameraPreviewLayer, at: 0)
         
-        let portantAngle = 90
         if let cameraPreview = cameraPreviewLayer.connection, cameraPreview.isVideoRotationAngleSupported(CGFloat(portantAngle)) {
             cameraPreview.videoRotationAngle = CGFloat(portantAngle)
         }
@@ -45,9 +44,8 @@ class Camera: NSObject,AVCapturePhotoCaptureDelegate {
         }
     }
     
-    func takePicture() {
+    func takePicture(portantAngle: CGFloat) {
         let settings = AVCapturePhotoSettings()
-        let portantAngle = 90
         if let cameraPreview = photoOutput.connection(with: .video), cameraPreview.isVideoRotationAngleSupported(CGFloat(portantAngle)) {
             cameraPreview.videoRotationAngle = CGFloat(portantAngle)
         }
@@ -55,7 +53,6 @@ class Camera: NSObject,AVCapturePhotoCaptureDelegate {
             self.photoOutput.capturePhoto(with: settings, delegate: self.delegate!)
         }
     }
-    
     func stopCamera() {
         self.cameraManeger.stopRunning()
     }

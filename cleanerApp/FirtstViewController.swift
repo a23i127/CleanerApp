@@ -43,7 +43,7 @@ class FirtstViewController: UIViewController,PHPickerViewControllerDelegate,Came
         picker.dismiss(animated: true, completion: nil)
         
         guard let provider = results.first?.itemProvider, provider.canLoadObject(ofClass: UIImage.self) else {
-            HUD.flash(.labeledError(title: "エラー", subtitle: "解析に失敗しました"), delay: 1.5)
+            HUD.hide()
             return
         }
         provider.loadObject(ofClass: UIImage.self) { [weak self] image, error in
