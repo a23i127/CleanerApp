@@ -7,7 +7,7 @@
 
 import Foundation
 import UIKit
-class CashCellData: UICollectionViewCell {
+class CashCellData: UITableViewCell {
     @IBOutlet weak var cashImageView: UIImageView!
     @IBOutlet weak var cashScoreLabel: UILabel!
     func configure(cashData: CaptureData) {
@@ -17,6 +17,7 @@ class CashCellData: UICollectionViewCell {
         } else {
             print("❌ 画像のデコードに失敗しました")
         }
-        
+        cashScoreLabel.text = "スコア: "+String(cashData.score)
     }
 }
+

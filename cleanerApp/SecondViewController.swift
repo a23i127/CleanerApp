@@ -15,6 +15,7 @@ class SecondViewController: UIViewController {
     var image: UIImage?
     var analysData: DecodableModel?
     @IBOutlet weak var scoreLabel: UILabel!
+    @IBOutlet weak var caputureButtun: UIBarButtonItem!
     override func viewDidLoad() {
         super.viewDidLoad()
         guard let analysData = analysData else { return }

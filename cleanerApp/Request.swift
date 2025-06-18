@@ -11,7 +11,7 @@ import UIKit
 import PKHUD
 class Request {
     func uploadToSeverImage(_ image: UIImage,completion: @escaping (DecodableModel?) -> Void) {
-        guard let url = URL(string: "**"),
+        guard let url = URL(string: "http://192.168.100.21:5001/analyze"),
               let imageData = image.jpegData(compressionQuality: 0.8) else {
             print("画像変換に失敗")
             return
