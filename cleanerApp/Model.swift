@@ -15,8 +15,9 @@ enum ImageCaptureOrientation {
     case portrait
     case landscape
 }
-struct CaptureData: Codable {
-    let imageData: Data
+struct ImageData: Codable {
+    var image: Data
+    let state: String
     let score: Int
-    let text: String
+    let advice: String
 }

@@ -12,27 +12,22 @@ class SecondViewController: UIViewController {
     @IBOutlet weak var imageView: UIImageView!
     @IBOutlet weak var aiReviewTextView: UITextView!
     //アンラッピングされた値を格納する
-    var image: UIImage?
-    var analysData: DecodableModel?
+    var analysData: ImageData?
+    let decoder = DecodeImageData()
     @IBOutlet weak var scoreLabel: UILabel!
-    @IBOutlet weak var caputureButtun: UIBarButtonItem!
+    @IBOutlet weak var stateLabel: UILabel!
     override func viewDidLoad() {
         super.viewDidLoad()
         guard let analysData = analysData else { return }
-        imageView.image = image
+        let uiImage = decoder.decodeImage(imageData: analysData.image)
+        imageView.image = uiImage
         scoreLabel.text = String(analysData.score)
         updateScoreLabel(label: scoreLabel, score: analysData.score)
         aiReviewTextView.text = analysData.advice
-        askToUsePhoto()
+        stateLabel.text = analysData.state
     }
-    func askToUsePhoto() {
-        let alert = UIAlertController(title: "内容を保存しますか？", message: nil, preferredStyle: .actionSheet)
-        
-        alert.addAction(UIAlertAction(title: "保存する", style: .default) { _ in
-            CacheManager.shared.caputureData(image: self.image, analysData: self.analysData)
-        })
-        alert.addAction(UIAlertAction(title: "保存しない", style: .cancel))
-        present(alert, animated: true)
+    @IBAction func caputurePhoto(_ sender: Any) {
+        CacheManager.shared.caputureData(analysData: self.analysData)
     }
     func updateScoreLabel(label: UILabel, score: Int) {
         label.text = "スコア: \(score)"

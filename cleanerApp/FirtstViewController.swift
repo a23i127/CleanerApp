@@ -12,12 +12,14 @@ import PKHUD
 import Vision
 class FirtstViewController: UIViewController,PHPickerViewControllerDelegate,CameraViewControllerDelegate {
     var request = Request()
-    var analysedData: DecodableModel?
+    var analysedData: ImageData?
     var analyser = ImageAnalyzer()
     var scanModel = ScanAiModel()
     var aiModel: VNCoreMLModel!
     var drawBox = DrawBoundingBox()
     var analysedImage: UIImage?
+    var imageAnalyzer = ImageAnalyzer()
+    var drawBoundingBox = DrawBoundingBox()
     override func viewDidLoad() {
         super.viewDidLoad()
         aiModel = scanModel.setAiModel()
@@ -50,30 +52,35 @@ class FirtstViewController: UIViewController,PHPickerViewControllerDelegate,Came
             guard let self = self else { return }
             if let image = image as? UIImage {
                 self.request.uploadToSeverImage(image) { result in
-                    guard let result else {
+                    guard var result else {
                         HUD.flash(.labeledError(title: "エラー", subtitle: "解析に失敗しました"), delay: 1.5)
                         return
                     }
-                    //解析させた情報を格納
-                    DispatchQueue.main.async {
-                        self.analysedData = result
+                    
+                    self.imageAnalyzer.analyze(image: image,model: self.aiModel) { analyzedResult in
+                        //検知した物体にboxをつけてたimageを格納
+                        let drawedImage = self.drawBoundingBox.drawBoundingBoxes(
+                            on: image,
+                            observations: analyzedResult,
+                            orientation: image.imageOrientation
+                        )
+                        //再度データ化
+                        result.image = drawedImage.pngData()!
+                        DispatchQueue.main.async {
+                            //解析した情報を格納
+                            self.analysedData = result
+                        }
+                        HUD.flash(.success, delay: 1.0)
+                        //処理後画面遷移
                         self.performSegue(withIdentifier: "library", sender: nil)
                     }
-                    HUD.flash(.success, delay: 1.0)
-                }
-                self.analyser.analyze(image: image,model: self.aiModel) { analyzedResult in
-                    //検知した物体にboxをつけてたimageを格納
-                    self.analysedImage = self.drawBox.drawBoundingBoxes(
-                        on: image,
-                        observations: analyzedResult,
-                        orientation: image.imageOrientation
-                    )
+                    
                 }
             }
         }
     }
-    func cameraViewControllerDidDismiss(analysedImage: UIImage?,analysedData: DecodableModel?) {
-        self.analysedImage = analysedImage
+    func cameraViewControllerDidDismiss(analysedData: ImageData?) {
+        
         self.analysedData = analysedData
         self.performSegue(withIdentifier: "library", sender: nil)
     }
@@ -85,7 +92,6 @@ class FirtstViewController: UIViewController,PHPickerViewControllerDelegate,Came
         }
         if segue.identifier == "library" {
             if let reviewViewController = segue.destination as? SecondViewController {
-                reviewViewController.image = self.analysedImage
                 reviewViewController.analysData = self.analysedData
             }
         }

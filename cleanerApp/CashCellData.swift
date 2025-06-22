@@ -10,13 +10,9 @@ import UIKit
 class CashCellData: UITableViewCell {
     @IBOutlet weak var cashImageView: UIImageView!
     @IBOutlet weak var cashScoreLabel: UILabel!
-    func configure(cashData: CaptureData) {
-        if let image = UIImage(data: cashData.imageData) {
-            // image に変換成功！
-            cashImageView.image = image
-        } else {
-            print("❌ 画像のデコードに失敗しました")
-        }
+    let decodeObj = DecodeImageData()
+    func configure(cashData: ImageData) {
+        cashImageView.image = decodeObj.decodeImage(imageData: cashData.image)
         cashScoreLabel.text = "スコア: "+String(cashData.score)
     }
 }

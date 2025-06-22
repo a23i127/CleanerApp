@@ -5,29 +5,28 @@ import Foundation
 class CacheManager {
     //staticで、classに直接紐付けた。
     static let shared = CacheManager()
-    var captureData: [CaptureData] = []
-    let storage: Storage<String, [CaptureData]>
+    var captureData: [ImageData] = []
+    let storage: Storage<String, [ImageData]>
     //privateにより、インスタンス化はアプリで１度のみしかされない！
     private init() {
         do {
-            storage = try Storage<String, [CaptureData]>(
+            storage = try Storage<String, [ImageData]>(
                 diskConfig: DiskConfig(name: "MyDiskCache"),
                 memoryConfig: MemoryConfig(), fileManager: FileManager.default,
-                transformer: TransformerFactory.forCodable(ofType: [CaptureData].self)
+                transformer: TransformerFactory.forCodable(ofType: [ImageData].self)
             )
         } catch {
             fatalError("Storage creation failed: \(error)")
         }
     }
     
-    func caputureData(image: UIImage?, analysData: DecodableModel?) {
-        let imageData = image!.pngData()!
-        let newCapture = CaptureData(imageData: imageData, score: analysData!.score,text: analysData!.advice)
+    func caputureData( analysData: ImageData?) {
+        let newCapture = ImageData(image: analysData!.image, state: analysData!.state, score: analysData!.score,advice: analysData!.advice)
         captureData.append(newCapture)
         saveCaptureData(captureData, forKey: "captureData")
     }
     // MARK: - 保存
-    func saveCaptureData(_ data: [CaptureData], forKey key: String) {
+    func saveCaptureData(_ data: [ImageData], forKey key: String) {
         do {
             try storage.setObject(data, forKey: key)
             print("✅ キャッシュ保存成功: \(key)")
@@ -37,7 +36,7 @@ class CacheManager {
     }
     
     // MARK: - 取得
-    func loadCaptureData(forKey key: String) -> [CaptureData]? {
+    func loadCaptureData(forKey key: String) -> [ImageData]? {
         do {
             let data = try storage.object(forKey: key)
             print("✅ キャッシュ取得成功: \(key)")

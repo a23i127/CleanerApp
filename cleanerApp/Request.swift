@@ -10,7 +10,7 @@ import Alamofire
 import UIKit
 import PKHUD
 class Request {
-    func uploadToSeverImage(_ image: UIImage,completion: @escaping (DecodableModel?) -> Void) {
+    func uploadToSeverImage(_ image: UIImage,completion: @escaping (ImageData?) -> Void) {
         guard let url = URL(string: "**"),
               let imageData = image.jpegData(compressionQuality: 0.8) else {
             print("画像変換に失敗")
@@ -27,7 +27,7 @@ class Request {
             case .success(let data):
                 do {
                     let decoder = JSONDecoder()
-                    let result = try decoder.decode(DecodableModel.self, from: data)
+                    let result = try decoder.decode(ImageData.self, from: data)
                     completion(result)
                 } catch {
                     // ここでエラー内容（JSON）も確認

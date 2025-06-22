@@ -10,7 +10,7 @@ import Vision
 import PKHUD
 //可読性の高いコードを常に意識する
 protocol CameraViewControllerDelegate: AnyObject {
-    func cameraViewControllerDidDismiss(analysedImage: UIImage?,analysedData: DecodableModel?)
+    func cameraViewControllerDidDismiss(analysedData: ImageData?)
 }
 class ViewController: UIViewController, UINavigationControllerDelegate, AVCapturePhotoCaptureDelegate {
     
@@ -24,9 +24,10 @@ class ViewController: UIViewController, UINavigationControllerDelegate, AVCaptur
     var fixedImage : FixedImageResult?
     var aiModel: VNCoreMLModel!
     var request = Request()
-    var analysedData: DecodableModel?
-    var analysedImage: UIImage?
+    var analysedData: ImageData?
+    var drawedImage: UIImage?
     var orientationCheck = Orientation()
+    var decoder = DecodeImageData()
     override func viewDidLoad() {
         super.viewDidLoad()
         camera.delegate = self
@@ -57,15 +58,7 @@ class ViewController: UIViewController, UINavigationControllerDelegate, AVCaptur
         alert.addAction(UIAlertAction(title: "使う", style: .default) { _ in
             self.camera.stopCamera()
             self.requestToSever(takenImage: takenImageData.image,aiModel: self.aiModel)
-            //キャプチャしたimageを物体検知させる処理
-            self.imageAnalyzer.analyze(image: takenImageData.image,model: self.aiModel) { analyzedResult in
-                //検知した物体にboxをつけてたimageを格納
-                self.analysedImage = self.drawBoundingBox.drawBoundingBoxes(
-                    on: self.cameraView.image!,
-                    observations: analyzedResult,
-                    orientation: takenImageData.image.imageOrientation
-                )
-            }
+            
         })
         alert.addAction(UIAlertAction(title: "もう一度撮る", style: .default) { _ in
             self.cameraView.image = nil
@@ -85,11 +78,23 @@ class ViewController: UIViewController, UINavigationControllerDelegate, AVCaptur
             //解析させた情報を格納
             DispatchQueue.main.async {
                 self.analysedData = result
-            }
-            HUD.flash(.success, delay: 1.0)
-            self.dismiss(animated: true) { [weak self] in
-                guard let self = self else { return }
-                self.delegate?.cameraViewControllerDidDismiss(analysedImage: self.analysedImage, analysedData: self.analysedData)
+                //受け取った写真を分析した後、認識した物体にboxを描写
+                let uiImage = self.decoder.decodeImage(imageData: result.image)
+                self.imageAnalyzer.analyze(image: uiImage,model: self.aiModel) { analyzedResult in
+                    //検知した物体にboxをつけてたimageを格納
+                    let drawedImage = self.drawBoundingBox.drawBoundingBoxes(
+                        on: self.cameraView.image!,
+                        observations: analyzedResult,
+                        orientation: takenImage.imageOrientation
+                    )
+                    //再度データ化
+                    self.analysedData?.image = drawedImage.pngData()!
+                    HUD.flash(.success, delay: 1.0)
+                    self.dismiss(animated: true) { [weak self] in
+                        guard let self = self else { return }
+                        self.delegate?.cameraViewControllerDidDismiss(analysedData: self.analysedData)
+                    }
+                }
             }
         }
     }

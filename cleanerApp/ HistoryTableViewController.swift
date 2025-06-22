@@ -12,7 +12,7 @@ import Cache
 
 class HistoryTableViewController: UIViewController, UITableViewDelegate, UITableViewDataSource {
     
-    var cashData: [CaptureData] = []
+    var cashData: [ImageData] = []
     var indexPath: IndexPath?
     
     @IBOutlet weak var historyTableView: UITableView!
@@ -58,8 +58,8 @@ class HistoryTableViewController: UIViewController, UITableViewDelegate, UITable
     
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
         if segue.identifier == "GotDetailData" {
-            if let nextViewController = segue.destination as? DetailViewController {
-                nextViewController.data = cashData[self.indexPath!.row]
+            if let nextViewController = segue.destination as? SecondViewController{
+                nextViewController.analysData = cashData[self.indexPath!.row]
             }
         }
     }
